@@ -1,8 +1,8 @@
 {
 	"name": "add-gitlab-npm-token",
 	"publisher": "vymarkov",
-	"displayName": "Configure access to GitLab NPM Registry",
-	"description": "It allows to configure access to GitLab NPM Registry from your workstation whenever you are working repo where npm dependencies could be fetched from Gitlab NPM registry only",
+	"displayName": "GitLab: Configure access to GitLab NPM Registry",
+	"description": "It allows to configure access to GitLab NPM Registry from your workstation whenever you are working on repo where npm dependencies could be fetched from Gitlab NPM registry only",
 	"version": "0.0.1",
 	"repository": {
 		"type": "git",

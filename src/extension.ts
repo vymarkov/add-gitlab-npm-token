@@ -4,6 +4,15 @@ import * as vscode from 'vscode';
 import * as url from 'url'
 import { findPkgsWithGitlabNPMRegisty, createAndSetTokenForGitlabNpmRegistry, genAccessTokenForGitlabNpmRegistry } from './commands'
 
+const createLinkToGitlabDocs = (gitlabBaseUrl: string, docsLink: string): vscode.Uri => {
+	if (gitlabBaseUrl.search('gitlab.com')) {
+		return vscode.Uri.parse('https://docs.gitlab.com/ce/user/packages/npm_registry/index.html#authenticating-to-the-gitlab-npm-registry')
+	}
+	const link = url.parse(docsLink)
+	link.host = url.parse(gitlabBaseUrl).host
+	return vscode.Uri.parse(url.format(link))
+}
+
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
@@ -11,6 +20,15 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "add-gitlab-npm-token" is now active!');
+
+	const getGitlabGroupID = (domain: string): string | number | null => {
+		const conf = vscode.workspace.getConfiguration('gitlabPipelineMonitor')
+
+		if (conf[domain]?.group) {
+			return (conf[domain] as { group: string })?.group || null
+		}
+		return null
+	}
 
 	const getGitlabAccessToken = (domain: string): string | null => {
 		const conf = vscode.workspace.getConfiguration('gitlabPipelineMonitor')
@@ -36,21 +54,41 @@ export async function activate(context: vscode.ExtensionContext) {
 				`, 'Yes', 'Learn more')
 	
 				if (answer === 'Yes' && getGitlabAccessToken(domain)) {
-					await createAndSetTokenForGitlabNpmRegistry(domain, async () => {
-						const token = getGitlabAccessToken(domain)
-						await genAccessTokenForGitlabNpmRegistry(token!)
-						return token!
-					})
+					try {
+						const token = getGitlabAccessToken(domain)!
+						const groupID = getGitlabGroupID(domain)!
+						const _token = await genAccessTokenForGitlabNpmRegistry(token, groupID)
+						if (_token) {
+							await createAndSetTokenForGitlabNpmRegistry(domain, _token)
+						}
+					} catch (err) {
+						if (err.code === 'gitlab/action-forbidden') {
+							const answer = await vscode.window.showInformationMessage(
+								`Unable to create an access token in order to install packages from Gitlab NPM Registry. 
+								You have to create a Personal Access Token`,
+								'Learn more'
+							)
+							if (answer === 'Learn more') {
+								vscode.env.openExternal(
+									createLinkToGitlabDocs(
+										gitlabBaseUrl,
+										'https://docs.gitlab.com/ce/user/packages/npm_registry/index.html#authenticating-with-a-personal-access-token-or-deploy-token'
+									)
+								)
+							}
+						} else if (err.message) {
+							vscode.window.showWarningMessage(err.message)
+						}
+					}
 					vscode.window.showInformationMessage('Successfully added a npm token for GitLab NPM Registry')
 				}
 				if (answer === 'Learn more') {
-					if (gitlabBaseUrl.search('gitlab.com')) {
-						vscode.env.openExternal(
-							vscode.Uri.parse(`https://docs.gitlab.com/ce/user/packages/npm_registry/index.html#authenticating-to-the-gitlab-npm-registry`)
+					vscode.env.openExternal(
+						createLinkToGitlabDocs(
+							gitlabBaseUrl, 
+							'https://docs.gitlab.com/ce/user/packages/npm_registry/index.html#authenticating-to-the-gitlab-npm-registry'
 						)
-					} else {
-						vscode.Uri.parse(`${gitlabBaseUrl}/ce/user/packages/npm_registry/index.html#authenticating-to-the-gitlab-npm-registry`)
-					}
+					)
 				}
 			})
 		} else if (!onExtStart) {
