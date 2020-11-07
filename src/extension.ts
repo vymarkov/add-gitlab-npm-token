@@ -43,7 +43,20 @@ export async function activate(context: vscode.ExtensionContext) {
   const authenticateToGitLabNPMRegistry = async (gitlabBaseUrl: string = 'https://gitlab.com', onExtStart: boolean = false) => {
     const domain = url.parse(gitlabBaseUrl).host!
 
-    const folders = [...(vscode.workspace.workspaceFolders ?? [])]
+    let folders = [...(vscode.workspace.workspaceFolders ?? [])]
+
+    if (!onExtStart && folders?.length > 1) {
+      const folderName = await vscode.window.showQuickPick(folders.map(itm => itm.name), {
+        placeHolder: folders[0].name,
+        ignoreFocusOut: true,
+        matchOnDescription: true
+      })
+
+      if (folderName) {
+        folders = [folders.find(itm => itm.name === folderName)!]
+      }
+    }
+
     const pkgs = (await Promise.all(folders.map(folder => findPkgsWithGitlabNPMRegisty(gitlabBaseUrl, folder.uri))))
       .reduce((acc, itm) => acc.concat(itm), [])
 
