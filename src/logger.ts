@@ -5,6 +5,10 @@ class Logger {
   log (msg: string) {
     this.logger.appendLine(msg)
   }
+
+  warn (msg: string) {
+    this.logger.appendLine(msg)
+  }
 }
 
 export const logger = new Logger()

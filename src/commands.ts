@@ -5,6 +5,7 @@ import { Gitlab } from '@gitbeaker/node'
 // @ts-ignore
 import * as getAuthToken from 'registry-auth-token'
 import { logger } from './logger'
+import * as vscode from 'vscode'
 
 export const genAccessTokenForGitlabNpmRegistry = async (token: string, group: string | number) => {
   const client = new Gitlab({ token })
@@ -45,16 +46,25 @@ const isGitlabNPMRegistry = (gitlabUrl: string, scope: string, cwd: string): boo
   return registryUrl.search(gitlabUrl) !== -1
 }
 
-export const findPkgsWithGitlabNPMRegisty = async (gitlabUrl: string, cwd: string) => {
-  const pkg = readPkg.sync({ cwd })
+export const findPkgsWithGitlabNPMRegisty = async (gitlabUrl: string, cwd: vscode.Uri) => {
+  try {
+    const pkg = readPkg.sync({ cwd: cwd.fsPath })
 
-  const deps: Set<string> = Object.keys({
-    ...pkg.dependencies, ...pkg.devDependencies, ...pkg.peerDependencies, ...pkg.optionalDependencies
-  }).filter((itm: string) => itm.startsWith('@'))
-    .map(itm => itm.substring(0, itm.search('/')))
-    .reduce((acc, itm) => acc.add(itm), new Set<string>())
+    const deps: Set<string> = Object.keys({
+      ...pkg.dependencies, ...pkg.devDependencies, ...pkg.peerDependencies, ...pkg.optionalDependencies
+    }).filter((itm: string) => itm.startsWith('@'))
+      .map(itm => itm.substring(0, itm.search('/')))
+      .reduce((acc, itm) => acc.add(itm), new Set<string>())
 
-  return ([...deps.values()])
-    .filter(itm => isGitlabNPMRegistry(gitlabUrl, itm, cwd))
-    .filter(() => !Boolean(getAuthToken(`//${url.parse(gitlabUrl).host}/api/v4/packages/npm/`)?.token))
+    return ([...deps.values()])
+      .filter(itm => isGitlabNPMRegistry(gitlabUrl, itm, cwd.fsPath))
+      .filter(() => !Boolean(getAuthToken(`//${url.parse(gitlabUrl).host}/api/v4/packages/npm/`)?.token))
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      logger.warn(`Unable to find package.json in dir ${cwd}`)
+    } else {
+      logger.warn(err.message)
+    }
+    return []
+  }
 }

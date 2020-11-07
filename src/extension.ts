@@ -44,7 +44,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const domain = url.parse(gitlabBaseUrl).host!
 
     const folders = [...(vscode.workspace.workspaceFolders ?? [])]
-    const pkgs = (await Promise.all(folders.map(folder => findPkgsWithGitlabNPMRegisty(gitlabBaseUrl, folder.uri.fsPath))))
+    const pkgs = (await Promise.all(folders.map(folder => findPkgsWithGitlabNPMRegisty(gitlabBaseUrl, folder.uri))))
       .reduce((acc, itm) => acc.concat(itm), [])
 
     if (pkgs.length) {
@@ -60,7 +60,7 @@ export async function activate(context: vscode.ExtensionContext) {
             const groupID = getGitlabGroupID(domain)!
             const _token = await genAccessTokenForGitlabNpmRegistry(token, groupID)
             if (_token && folders[0]?.uri?.fsPath) {
-              await createAndSetTokenForGitlabNpmRegistry(domain, _token, folders[0]?.uri?.fsPath)
+              await createAndSetTokenForGitlabNpmRegistry(domain, _token, folders[0]?.uri.fsPath)
             }
           } catch (err) {
             if (err.code === 'gitlab/action-forbidden') {
