@@ -50,7 +50,7 @@ export async function activate(context: vscode.ExtensionContext) {
     if (pkgs.length) {
       pkgs.map(async (scope: string) => {
         const answer = await vscode.window.showInformationMessage(
-          `We found that packages at ${scope} use Gitlab NPM Registry, but didn't found any access tokens.
+        `We found that packages at ${scope} use Gitlab NPM Registry, but didn't found any access tokens.
 				 Would you like to generate an access token to authenticate to the GitLab NPM Registry?
 				`, 'Yes', 'Learn more')
 
