@@ -19,7 +19,7 @@ export const genAccessTokenForGitlabNpmRegistry = async (token: string, group: s
       ['read_package_registry']) as { token: string, username: string }
     return resp.token
   } catch (err) {
-    console.error(err)
+    logger.warn(`Unable to create a token (${err.message})`)
 
     if (err?.response?.statusCode === 401 || err?.response?.statusCode === 403) {
       err.code = 'gitlab/action-forbidden'
@@ -59,6 +59,7 @@ export const findPkgsWithGitlabNPMRegisty = async (gitlabUrl: string, cwd: vscod
     return ([...deps.values()])
       .filter(itm => isGitlabNPMRegistry(gitlabUrl, itm, cwd.fsPath))
       .filter(() => !Boolean(getAuthToken(`//${url.parse(gitlabUrl).host}/api/v4/packages/npm/`)?.token))
+      .map(scope => ({ scope, cwd }))
   } catch (err) {
     if (err.code === 'ENOENT') {
       logger.warn(`Unable to find package.json in dir ${cwd}`)

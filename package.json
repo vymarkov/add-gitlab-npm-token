@@ -21,15 +21,24 @@
 	],
 	"activationEvents": [
 		"onCommand:add-gitlab-npm-token.find-pkg-scope-with-gitlab-npm-registry",
-		"workspaceContains:**/package.json"
+    "onCommand:add-gitlab-npm-token.setToken",
+    "onCommand:add-gitlab-npm-token.openUserSettings"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
 				"command": "add-gitlab-npm-token.find-pkg-scope-with-gitlab-npm-registry",
-				"title": "GitLab: Configure access to GitLab NPM Registry"
-			}
+				"title": "GitLab NPM Registry: Configure access to GitLab NPM Registry"
+			},
+			{
+				"command": "add-gitlab-npm-token.setToken",
+				"title": "GitLab NPM Registry: Set Gitlab Personal Access Token"
+      },
+      {
+        "command": "add-gitlab-npm-token.openUserSettings",
+        "title": "GitLab NPM Registry: Open User Settings page to add a personal access token"
+      }
 		]
 	},
 	"scripts": {
@@ -41,6 +50,7 @@
 		"test": "node ./out/test/runTest.js"
 	},
 	"devDependencies": {
+		"@types/git-url-parse": "^9.0.0",
 		"@types/glob": "^7.1.3",
 		"@types/mocha": "^8.0.0",
 		"@types/node": "^12.11.7",
@@ -57,9 +67,14 @@
 	},
 	"dependencies": {
 		"@gitbeaker/node": "^25.2.0",
+		"@vymarkov/gitlab-workflow": "^3.6.0",
 		"@zkochan/npm-conf": "^2.0.1",
 		"execa": "^4.1.0",
+		"git-url-parse": "^11.4.0",
 		"read-pkg": "^5.2.0",
 		"registry-auth-token": "^4.2.0"
-	}
+	},
+	"extensionDependencies": [
+		"vscode.git"
+	]
 }

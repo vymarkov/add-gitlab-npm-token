@@ -4,77 +4,75 @@ import * as vscode from 'vscode';
 import * as url from 'url'
 import { findPkgsWithGitlabNPMRegisty, createAndSetTokenForGitlabNpmRegistry, genAccessTokenForGitlabNpmRegistry } from './commands'
 import { logger } from './logger'
+import { getFolders, getGitlabAccessToken, getGitlabGroupID } from './utils'
 
-const createLinkToGitlabDocs = (gitlabBaseUrl: string, docsLink: string): vscode.Uri => {
-  if (gitlabBaseUrl.search('gitlab.com')) {
+// @ts-ignore
+// import tokenInput = require('@vymarkov/gitlab-workflow/out/src/token_input')
+import { tokenService } from './tokenService'
+import { showInput } from './tokenInput'
+
+const updatePageUrl = (instanceUrl: string, pageUrl: string): vscode.Uri => {
+  if (instanceUrl.search('gitlab.com')) {
+    return vscode.Uri.parse(pageUrl)
+  }
+  const link = url.parse(pageUrl)
+  link.host = url.parse(instanceUrl).host
+  return vscode.Uri.parse(url.format(link))
+}
+
+const createLinkToGitlabDocs = (instanceUrl: string, docsLink: string): vscode.Uri => {
+  if (instanceUrl.search('gitlab.com')) {
     return vscode.Uri.parse('https://docs.gitlab.com/ce/user/packages/npm_registry/index.html#authenticating-to-the-gitlab-npm-registry')
   }
   const link = url.parse(docsLink)
-  link.host = url.parse(gitlabBaseUrl).host
+  link.host = url.parse(instanceUrl).host
   return vscode.Uri.parse(url.format(link))
 }
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
+  tokenService.init(context)
 
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
   logger.log('Congratulations, your extension "add-gitlab-npm-token" is now active!');
 
-  const getGitlabGroupID = (domain: string): string | number | null => {
-    const conf = vscode.workspace.getConfiguration('gitlabPipelineMonitor')
+  const authenticateToGitLabNPMRegistry = async (instanceUrl: string = 'https://gitlab.com') => {
+    const domain = url.parse(instanceUrl).host!
 
-    if (conf[domain]?.group) {
-      return (conf[domain] as { group: string })?.group || null
-    }
-    return null
-  }
-
-  const getGitlabAccessToken = (domain: string): string | null => {
-    const conf = vscode.workspace.getConfiguration('gitlabPipelineMonitor')
-
-    if (conf[domain]?.token) {
-      return (conf[domain] as { token: string })?.token || null
-    }
-    return null
-  }
-
-  const authenticateToGitLabNPMRegistry = async (gitlabBaseUrl: string = 'https://gitlab.com', onExtStart: boolean = false) => {
-    const domain = url.parse(gitlabBaseUrl).host!
-
-    let folders = [...(vscode.workspace.workspaceFolders ?? [])]
-
-    if (!onExtStart && folders?.length > 1) {
-      const folderName = await vscode.window.showQuickPick(folders.map(itm => itm.name), {
-        placeHolder: folders[0].name,
-        ignoreFocusOut: true,
-        matchOnDescription: true
-      })
-
-      if (folderName) {
-        folders = [folders.find(itm => itm.name === folderName)!]
-      }
-    }
-
-    const pkgs = (await Promise.all(folders.map(folder => findPkgsWithGitlabNPMRegisty(gitlabBaseUrl, folder.uri))))
+    const folders = await getFolders()
+    const pkgs = (await Promise.all(folders.map(folder => findPkgsWithGitlabNPMRegisty(instanceUrl, folder.uri))))
       .reduce((acc, itm) => acc.concat(itm), [])
 
     if (pkgs.length) {
-      pkgs.map(async (scope: string) => {
+      pkgs.map(async ({ scope, cwd: folder }: { scope: string, cwd: vscode.Uri }) => {
         const answer = await vscode.window.showInformationMessage(
-        `We found that packages at ${scope} use Gitlab NPM Registry, but didn't found any access tokens.
+          `We found that packages at ${scope} use Gitlab NPM Registry, but didn't found any access tokens.
 				 Would you like to generate an access token to authenticate to the GitLab NPM Registry?
-				`, 'Yes', 'Learn more')
+        `, 'Yes', 'Learn more')
 
-        if (answer === 'Yes' && getGitlabAccessToken(domain)) {
+        if (answer === 'Yes' && !getGitlabAccessToken(instanceUrl)) {
+          return vscode.window.showWarningMessage(
+            'Unable to find Gitlab Personal Access Token with required permissions, you have to create one',
+            'Open User Settings',
+            'Learn more'
+          )
+        }
+
+        if (answer === 'Yes') {
           try {
-            const token = getGitlabAccessToken(domain)!
-            const groupID = getGitlabGroupID(domain)!
-            const _token = await genAccessTokenForGitlabNpmRegistry(token, groupID)
-            if (_token && folders[0]?.uri?.fsPath) {
-              await createAndSetTokenForGitlabNpmRegistry(domain, _token, folders[0]?.uri.fsPath)
+            const token = getGitlabAccessToken(instanceUrl)!
+            const groupID = await getGitlabGroupID(domain, folder)
+            if (!groupID) {
+              logger.log(`Unable to determine GitLab group's name, but it's required in order to generate token (${folder.fsPath})`)
+              return vscode.window.showWarningMessage(
+                'Unable to determine GitLab group\'s name, but it required in order to generate token'
+              )
             }
+            const _token = await genAccessTokenForGitlabNpmRegistry(token, groupID)
+            await createAndSetTokenForGitlabNpmRegistry(domain, _token!, folder.fsPath)
+            vscode.window.showInformationMessage('Successfully added a npm token for GitLab NPM Registry')
           } catch (err) {
             if (err.code === 'gitlab/action-forbidden') {
               const answer = await vscode.window.showInformationMessage(
@@ -85,7 +83,7 @@ export async function activate(context: vscode.ExtensionContext) {
               if (answer === 'Learn more') {
                 vscode.env.openExternal(
                   createLinkToGitlabDocs(
-                    gitlabBaseUrl,
+                    instanceUrl,
                     'https://docs.gitlab.com/ce/user/packages/npm_registry/index.html#authenticating-with-a-personal-access-token-or-deploy-token'
                   )
                 )
@@ -94,38 +92,39 @@ export async function activate(context: vscode.ExtensionContext) {
               vscode.window.showWarningMessage(err.message)
             }
           }
-          vscode.window.showInformationMessage('Successfully added a npm token for GitLab NPM Registry')
         }
         if (answer === 'Learn more') {
           vscode.env.openExternal(
             createLinkToGitlabDocs(
-              gitlabBaseUrl,
+              instanceUrl,
               'https://docs.gitlab.com/ce/user/packages/npm_registry/index.html#authenticating-to-the-gitlab-npm-registry'
             )
           )
         }
       })
-    } else if (!onExtStart) {
+    } else {
       vscode.window.showInformationMessage('Looks like, you\'ve configured all NPM registries, great job 👍')
     }
-  };
+  }
 
   context.subscriptions.push(
     vscode.commands.registerCommand('add-gitlab-npm-token.find-pkg-scope-with-gitlab-npm-registry', authenticateToGitLabNPMRegistry)
-  );
+  )
 
   context.subscriptions.push(
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with registerCommand
-    // The commandId parameter must match the command field in package.json
-    vscode.commands.registerCommand('add-gitlab-npm-token.helloWorld', () => {
-      // The code you place here will be executed every time your command is executed
+    vscode.commands.registerCommand('add-gitlab-npm-token.setToken', showInput)
+  )
 
-      // Display a message box to the user
-      vscode.window.showInformationMessage('Hello World from Add-gitlab-npm-token!');
-    }));
-
-  await authenticateToGitLabNPMRegistry('https://gitlab.com', true)
+  context.subscriptions.push(
+    vscode.commands.registerCommand('add-gitlab-npm-token.openUserSettings', (instanceUrl: string = 'https://gitlab.com') => {
+      vscode.env.openExternal(
+        updatePageUrl(
+          instanceUrl,
+          'https://gitlab.com/-/profile/personal_access_tokens'
+        )
+      )
+    })
+  )
 }
 
 // this method is called when your extension is deactivated
