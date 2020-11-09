@@ -3,7 +3,7 @@
 	"publisher": "vymarkov",
 	"displayName": "GitLab: Configure access to GitLab NPM Registry",
 	"description": "It allows to configure access to GitLab NPM Registry from your workstation whenever you are working on repo where npm dependencies could be fetched from Gitlab NPM registry only",
-	"version": "0.0.6",
+	"version": "0.0.7",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/vymarkov/add-gitlab-npm-token.git"
@@ -21,8 +21,8 @@
 	],
 	"activationEvents": [
 		"onCommand:add-gitlab-npm-token.find-pkg-scope-with-gitlab-npm-registry",
-    "onCommand:add-gitlab-npm-token.setToken",
-    "onCommand:add-gitlab-npm-token.openUserSettings"
+		"onCommand:add-gitlab-npm-token.setToken",
+		"onCommand:add-gitlab-npm-token.openUserSettings"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -34,11 +34,11 @@
 			{
 				"command": "add-gitlab-npm-token.setToken",
 				"title": "GitLab NPM Registry: Set Gitlab Personal Access Token"
-      },
-      {
-        "command": "add-gitlab-npm-token.openUserSettings",
-        "title": "GitLab NPM Registry: Open User Settings page to add a personal access token"
-      }
+			},
+			{
+				"command": "add-gitlab-npm-token.openUserSettings",
+				"title": "GitLab NPM Registry: Open User Settings page to add a personal access token"
+			}
 		]
 	},
 	"scripts": {
