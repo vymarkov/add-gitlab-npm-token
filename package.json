@@ -4,6 +4,7 @@
 	"displayName": "GitLab: Configure access to GitLab NPM Registry",
 	"description": "It allows to configure access to GitLab NPM Registry from your workstation whenever you are working on repo where npm dependencies could be fetched from Gitlab NPM registry only",
 	"version": "0.0.9",
+	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/vymarkov/add-gitlab-npm-token"
@@ -60,6 +61,7 @@
 		"eslint": "^7.16.0",
 		"glob": "^7.1.6",
 		"mocha": "^8.1.3",
+		"ovsx": "0.1.0-next.72b2e9d",
 		"ts-node": "^9.1.1",
 		"typescript": "^4.1.3",
 		"vsce": "^1.83.0",
