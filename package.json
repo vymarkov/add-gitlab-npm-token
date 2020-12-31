@@ -3,7 +3,7 @@
 	"publisher": "vymarkov",
 	"displayName": "GitLab: Configure access to GitLab NPM Registry",
 	"description": "It allows to configure access to GitLab NPM Registry from your workstation whenever you are working on repo where npm dependencies could be fetched from Gitlab NPM registry only",
-	"version": "0.0.9",
+	"version": "0.0.10",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
@@ -44,7 +44,9 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
+		"precompile": "npm run lint",
+		"compile": "npx tsc -p ./",
+		"pkg": "npx vsce package",
 		"lint": "eslint src --ext ts",
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
@@ -63,7 +65,7 @@
 		"mocha": "^8.1.3",
 		"ovsx": "0.1.0-next.72b2e9d",
 		"ts-node": "^9.1.1",
-		"typescript": "^4.1.3",
+		"typescript": "^4.0.5",
 		"vsce": "^1.83.0",
 		"vscode-test": "^1.4.0"
 	},
