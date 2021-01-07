@@ -1,15 +1,24 @@
+import * as dotnev from 'dotenv'
+dotnev.config({ path: `${__dirname}/../.env` }) // for development purposes only
+
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as url from 'url'
-import { findPkgsWithGitlabNPMRegisty, createAndSetTokenForGitlabNpmRegistry, genAccessTokenForGitlabNpmRegistry } from './commands'
+import { findPkgsWithGitlabNPMRegisty, setTokenForGitlabNpmRegistry, genAccessTokenForGitlabNpmRegistry } from './commands'
 import { logger } from './logger'
 import { getFolders, getGitlabAccessToken, getGitlabGroupID } from './utils'
+
+logger.log(__dirname)
+logger.log(process.cwd())
+// @ts-ignore
+logger.log(process.env.GITLAB_TOKEN)
 
 // @ts-ignore
 // import tokenInput = require('@vymarkov/gitlab-workflow/out/src/token_input')
 import { tokenService } from './tokenService'
 import { showInput } from './tokenInput'
+import { getGitlabNPMToken, validateGitlabAccessToken } from './utils/gitlab';
 
 const updatePageUrl = (instanceUrl: string, pageUrl: string): vscode.Uri => {
   if (instanceUrl.search('gitlab.com')) {
@@ -47,12 +56,25 @@ export async function activate(context: vscode.ExtensionContext) {
 
     if (pkgs.length) {
       pkgs.map(async ({ scope, cwd: folder }: { scope: string, cwd: vscode.Uri }) => {
+        const npmToken = await getGitlabNPMToken()
+        if (npmToken) {
+          await setTokenForGitlabNpmRegistry(domain, npmToken, folder.fsPath)
+          return vscode.window.showInformationMessage(
+            `Successfully added npm token for GitLab NPM Registry.
+            NPM token from environment variables has been used.`
+          )
+        }
+
         const answer = await vscode.window.showInformationMessage(
           `We found that packages at ${scope} use Gitlab NPM Registry, but didn't found any access tokens.
 				 Would you like to generate an access token to authenticate to the GitLab NPM Registry?
         `, 'Yes', 'Learn more')
 
-        if (answer === 'Yes' && !getGitlabAccessToken(instanceUrl)) {
+
+        const token = getGitlabAccessToken(instanceUrl)
+        const isValid = await validateGitlabAccessToken(logger, instanceUrl, token)
+
+        if (answer === 'Yes' && isValid) {
           return vscode.window.showWarningMessage(
             'Unable to find Gitlab Personal Access Token with required permissions, you have to create one',
             'Open User Settings',
@@ -62,7 +84,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (answer === 'Yes') {
           try {
-            const token = getGitlabAccessToken(instanceUrl)!
             const groupID = await getGitlabGroupID(domain, folder)
             if (!groupID) {
               logger.log(`Unable to determine GitLab group's name, but it's required in order to generate token (${folder.fsPath})`)
@@ -70,9 +91,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 'Unable to determine GitLab group\'s name, but it required in order to generate token'
               )
             }
-            const _token = await genAccessTokenForGitlabNpmRegistry(token, groupID)
-            await createAndSetTokenForGitlabNpmRegistry(domain, _token!, folder.fsPath)
-            vscode.window.showInformationMessage('Successfully added a npm token for GitLab NPM Registry')
+            const _token = await genAccessTokenForGitlabNpmRegistry(token!, groupID)
+            await setTokenForGitlabNpmRegistry(domain, _token!, folder.fsPath)
+            return vscode.window.showInformationMessage(
+              `Successfully added npm token for GitLab NPM Registry
+              Deploy token with read only access has been created.
+              `
+            )
           } catch (err) {
             if (err.code === 'gitlab/action-forbidden') {
               const answer = await vscode.window.showInformationMessage(

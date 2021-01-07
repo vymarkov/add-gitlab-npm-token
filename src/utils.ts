@@ -5,8 +5,13 @@ import gitUrlParse = require('git-url-parse')
 import * as url from 'url'
 
 import { tokenService } from './tokenService'
+import { Gitlab } from '@gitbeaker/node'
+import { logger } from './logger'
+const isEmpty = require('lodash.isempty')
 
 export type GitlabDomain = string
+
+export type GitlabToken = string | null
 
 export const getFolders = async (): Promise<vscode.WorkspaceFolder[]> => {
   const folders = [...(vscode.workspace.workspaceFolders ?? [])]
@@ -35,10 +40,21 @@ const getGitlabAccessTokenFromGitlabPipelineMonitor = (domain: GitlabDomain) => 
   return null
 }
 
-export const getGitlabAccessToken = (instanceUrl: string): string | null => {
+
+/**
+ * It's very useful in case when you use editor like Gitpod or Code Server that runs on Docker environment
+ */
+const getGitlabTokenFromEnvironmentVariables = (): GitlabToken => {
+  const token = process.env.GITLAB_TOKEN || process.env.GL_TOKEN || null
+  return token
+}
+
+export const getGitlabAccessToken = (instanceUrl: string): GitlabToken => {
   const domain = url.parse(instanceUrl).host!
 
-  const token = tokenService.getToken(instanceUrl) || getGitlabAccessTokenFromGitlabPipelineMonitor(domain) || null
+  const token = tokenService.getToken(instanceUrl)
+    || getGitlabTokenFromEnvironmentVariables()
+    || getGitlabAccessTokenFromGitlabPipelineMonitor(domain) || null
   return token
 }
 

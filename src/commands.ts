@@ -29,7 +29,7 @@ export const genAccessTokenForGitlabNpmRegistry = async (token: string, group: s
   return null
 }
 
-export const createAndSetTokenForGitlabNpmRegistry = async (gitlabHost: string, accessToken: string, cwd: string): Promise<boolean> => {
+export const setTokenForGitlabNpmRegistry = async (gitlabHost: string, accessToken: string, cwd: string): Promise<boolean> => {
   if (accessToken) {
     logger.log(`createAndSetTokenForGitlabNpmRegistry - current working directory: ${cwd}`)
     await execa.command(`npm config set //${gitlabHost}/api/v4/packages/npm/:_authToken=${accessToken}`, { cwd });

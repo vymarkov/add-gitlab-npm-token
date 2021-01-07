@@ -1,4 +1,4 @@
-# Configure access to GitLab NPM Registry README
+# Configure access to GitLab NPM Registry
 
 It allows to configure access to GitLab NPM Registry from your workstation whenever you are working repo where npm dependencies could be fetched from Gitlab NPM registry thus you have to create an access token in order to be able fetch packages from [Gitlab NPM registy](https://docs.gitlab.com/ce/user/packages/npm_registry/index.html#authenticating-to-the-gitlab-npm-registry). This extension creates [a deploy token](https://docs.gitlab.com/ee/api/deploy_tokens.html#create-a-group-deploy-token) on the group level with read-only permissions, so you won't be able 
 to publish packages by using this token.

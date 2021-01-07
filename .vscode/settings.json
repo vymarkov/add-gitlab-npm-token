@@ -20,5 +20,13 @@
         "vsix",
         "vymarkov",
         "zkochan"
+    ],
+    "json.schemas": [
+      {
+        "fileMatch": [
+          ".gitpod.yml"
+        ],
+        "url": "https://gitpod.io/schemas/gitpod-schema.json"
+      }
     ]
 }

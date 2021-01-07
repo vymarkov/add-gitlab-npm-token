@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
+import { ILogger } from './types';
 
-class Logger {
+class Logger implements ILogger {
   private readonly logger = vscode.window.createOutputChannel('GitLab NPM Registry')
   log (msg: string) {
     this.logger.appendLine(msg)

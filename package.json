@@ -1,9 +1,10 @@
 {
-	"name": "add-gitlab-npm-token",
+  "preview": true,
 	"publisher": "vymarkov",
+	"name": "add-gitlab-npm-token",
 	"displayName": "GitLab: Configure access to GitLab NPM Registry",
-	"description": "It allows to configure access to GitLab NPM Registry from your workstation whenever you are working on repo where npm dependencies could be fetched from Gitlab NPM registry only",
-	"version": "0.0.10",
+	"description": "It allows to configure access to GitLab NPM Registry from your workstation whenever you are working on repo where npm dependencies should be fetched from Gitlab NPM registry",
+	"version": "0.0.11",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
@@ -55,6 +56,7 @@
 	"devDependencies": {
 		"@types/git-url-parse": "^9.0.0",
 		"@types/glob": "^7.1.3",
+		"@types/lodash.isempty": "^4.4.6",
 		"@types/mocha": "^8.0.0",
 		"@types/node": "^12.11.7",
 		"@types/vscode": "^1.49.0",
@@ -64,6 +66,7 @@
 		"glob": "^7.1.6",
 		"mocha": "^8.1.3",
 		"ovsx": "0.1.0-next.72b2e9d",
+		"ts-mocha": "^8.0.0",
 		"ts-node": "^9.1.1",
 		"typescript": "^4.0.5",
 		"vsce": "^1.83.0",
@@ -73,8 +76,11 @@
 		"@gitbeaker/node": "^25.2.0",
 		"@vymarkov/gitlab-workflow": "^3.6.0",
 		"@zkochan/npm-conf": "^2.0.1",
+		"dotenv": "^8.2.0",
 		"execa": "^4.1.0",
 		"git-url-parse": "^11.4.0",
+		"lodash.isempty": "^4.4.0",
+		"p-timeout": "^4.1.0",
 		"read-pkg": "^5.2.0",
 		"registry-auth-token": "^4.2.0"
 	},
